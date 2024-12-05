@@ -16,3 +16,26 @@ pub async fn seek() -> impl IntoResponse {
         )],
     )
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use axum::response::Response;
+
+    #[tokio::test]
+    async fn test_hello_world() {
+        let response = hello_world().await;
+        assert_eq!(response, "Hello, bird!");
+    }
+
+    #[tokio::test]
+    async fn test_seek() {
+        let response: Response = seek().await.into_response();
+        assert_eq!(response.status(), StatusCode::FOUND);
+        let headers = response.headers();
+        assert_eq!(
+            headers.get(header::LOCATION).unwrap(),
+            "https://www.youtube.com/watch?v=9Gc4QTqslN4"
+        );
+    }
+}
