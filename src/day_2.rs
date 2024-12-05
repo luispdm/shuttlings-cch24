@@ -15,7 +15,8 @@ pub struct SubV4 {
 }
 
 pub async fn dest_v4(from_key: Query<AddV4>) -> String {
-    from_key.from
+    from_key
+        .from
         .octets()
         .iter()
         .zip(from_key.key.octets().iter())
@@ -26,7 +27,8 @@ pub async fn dest_v4(from_key: Query<AddV4>) -> String {
 }
 
 pub async fn key_v4(from_to: Query<SubV4>) -> String {
-    from_to.to
+    from_to
+        .to
         .octets()
         .iter()
         .zip(from_to.from.octets().iter())
