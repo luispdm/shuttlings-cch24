@@ -1,29 +1,17 @@
-use axum::{
-    http::{header, StatusCode},
-    response::IntoResponse,
-    routing::get,
-    Router,
-};
+mod day_2;
+mod day_minus_1;
 
-async fn hello_world() -> &'static str {
-    "Hello, bird!"
-}
+use axum::{routing::get, Router};
 
-async fn seek() -> impl IntoResponse {
-    (
-        StatusCode::FOUND,
-        [(
-            header::LOCATION,
-            "https://www.youtube.com/watch?v=9Gc4QTqslN4",
-        )],
-    )
-}
+use crate::{day_2::*, day_minus_1::*};
 
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
         .route("/", get(hello_world))
-        .route("/-1/seek", get(seek));
+        .route("/-1/seek", get(seek))
+        .route("/2/dest", get(dest_v4))
+        .route("/2/key", get(key_v4));
 
     Ok(router.into())
 }
