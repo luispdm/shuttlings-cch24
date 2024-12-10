@@ -1,9 +1,13 @@
+mod day5;
 mod day_2;
 mod day_minus_1;
 
-use axum::{routing::get, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 
-use crate::{day_2::*, day_minus_1::*};
+use crate::{day5::*, day_2::*, day_minus_1::*};
 
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
@@ -13,7 +17,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/2/dest", get(dest_v4))
         .route("/2/key", get(key_v4))
         .route("/2/v6/dest", get(dest_v6))
-        .route("/2/v6/key", get(key_v6));
+        .route("/2/v6/key", get(key_v6))
+        .route("/5/manifest", post(manifest));
 
     Ok(router.into())
 }
