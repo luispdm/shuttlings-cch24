@@ -13,7 +13,10 @@ pub struct AppState {
 }
 
 pub async fn milk(State(state): State<Arc<AppState>>) -> impl IntoResponse {
-    StatusCode::OK
+    match state.limiter.try_acquire(1) {
+        true => (StatusCode::OK, "Milk withdrawn\n"),
+        false => (StatusCode::TOO_MANY_REQUESTS, "No milk available\n"),
+    }
 }
 
 pub fn rate_limiter() -> RateLimiter {
