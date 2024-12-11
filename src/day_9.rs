@@ -8,14 +8,16 @@ use axum::{
 };
 use leaky_bucket::RateLimiter;
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 const INITIAL_TOKENS: usize = 5;
 const MAX_TOKENS: usize = 5;
 const REFILL_INTERVAL: u64 = 1;
 const REFILL_AMOUNT: usize = 1;
 
+#[derive(Clone)]
 pub struct AppState {
-    pub limiter: RateLimiter,
+    pub limiter: Arc<Mutex<RateLimiter>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,11 +41,11 @@ impl Milk {
 }
 
 pub async fn milk(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     body: Bytes,
 ) -> impl IntoResponse {
-    if !state.limiter.try_acquire(1) {
+    if !state.limiter.lock().await.try_acquire(1) {
         return (
             StatusCode::TOO_MANY_REQUESTS,
             "No milk available\n".to_string(),
@@ -71,7 +73,17 @@ pub async fn milk(
     }
 }
 
-pub fn rate_limiter() -> RateLimiter {
+pub async fn refill(State(state): State<AppState>) -> StatusCode {
+    let mut limiter = state.limiter.lock().await;
+    *limiter = rate_limiter();
+    StatusCode::OK
+}
+
+pub fn state_rate_limiter() -> Arc<Mutex<RateLimiter>> {
+    Arc::new(Mutex::new(rate_limiter()))
+}
+
+fn rate_limiter() -> RateLimiter {
     RateLimiter::builder()
         .initial(INITIAL_TOKENS)
         .interval(tokio::time::Duration::from_secs(REFILL_INTERVAL))
