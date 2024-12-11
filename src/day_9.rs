@@ -43,31 +43,32 @@ pub async fn milk(
     headers: HeaderMap,
     body: Bytes,
 ) -> impl IntoResponse {
-    if state.limiter.try_acquire(1) {
-        // parse content-type header
-        let ct = match headers.get("Content-Type") {
-            Some(ct) if ct == "application/json" => ct.to_str().ok(),
-            _ => None,
-        };
-
-        // return the default string if no content-type is provided or try to perform the conversion
-        if ct.is_none() {
-            return (StatusCode::OK, "Milk withdrawn\n".to_string());
-        } else {
-            return serde_json::from_slice::<Milk>(&body)
-                .map(|m| {
-                    (
-                        StatusCode::OK,
-                        serde_json::ser::to_string(&m.convert()).unwrap(),
-                    )
-                })
-                .unwrap_or_else(|_| (StatusCode::BAD_REQUEST, "".to_string()));
-        }
+    if !state.limiter.try_acquire(1) {
+        return (
+            StatusCode::TOO_MANY_REQUESTS,
+            "No milk available\n".to_string(),
+        );
     }
-    (
-        StatusCode::TOO_MANY_REQUESTS,
-        "No milk available\n".to_string(),
-    )
+
+    // parse content-type header
+    let ct = match headers.get("Content-Type") {
+        Some(ct) if ct == "application/json" => ct.to_str().ok(),
+        _ => None,
+    };
+
+    // return the default string if no content-type is provided or try the conversion
+    if ct.is_none() {
+        (StatusCode::OK, "Milk withdrawn\n".to_string())
+    } else {
+        serde_json::from_slice::<Milk>(&body)
+            .map(|m| {
+                (
+                    StatusCode::OK,
+                    serde_json::ser::to_string(&m.convert()).unwrap(),
+                )
+            })
+            .unwrap_or_else(|_| (StatusCode::BAD_REQUEST, "".to_string()))
+    }
 }
 
 pub fn rate_limiter() -> RateLimiter {
