@@ -98,8 +98,8 @@ pub async fn manifest(headers: HeaderMap, body: Bytes) -> impl IntoResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::{HeaderMap, HeaderValue};
     use axum::body::Body;
+    use axum::http::{HeaderMap, HeaderValue};
     use http_body_util::BodyExt;
 
     async fn body_to_string(body: Body) -> String {
@@ -133,10 +133,10 @@ mod tests {
 
         let headers = create_headers("application/toml");
         let response = manifest(headers, Bytes::from(toml_content.as_bytes().to_vec())).await;
-        
+
         let (parts, body) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::OK);
-        
+
         let body_content = body_to_string(body).await;
         assert_eq!(body_content, "Toy Car: 5\nDoll: 3");
     }
@@ -158,10 +158,10 @@ mod tests {
 
         let headers = create_headers("application/yaml");
         let response = manifest(headers, Bytes::from(yaml_content.as_bytes().to_vec())).await;
-        
+
         let (parts, body) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::OK);
-        
+
         let body_content = body_to_string(body).await;
         assert_eq!(body_content, "Bicycle: 2\nSkateboard: 1");
     }
@@ -184,10 +184,10 @@ mod tests {
 
         let headers = create_headers("application/json");
         let response = manifest(headers, Bytes::from(json_content.as_bytes().to_vec())).await;
-        
+
         let (parts, body) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::OK);
-        
+
         let body_content = body_to_string(body).await;
         assert_eq!(body_content, "Puzzle: 4\nBook: 3");
     }
@@ -206,7 +206,7 @@ mod tests {
 
         let headers = create_headers("application/toml");
         let response = manifest(headers, Bytes::from(toml_content.as_bytes().to_vec())).await;
-        
+
         let (parts, _) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::BAD_REQUEST);
     }
@@ -224,7 +224,7 @@ mod tests {
 
         let headers = create_headers("application/toml");
         let response = manifest(headers, Bytes::from(toml_content.as_bytes().to_vec())).await;
-        
+
         let (parts, _) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::BAD_REQUEST);
     }
@@ -243,7 +243,7 @@ mod tests {
 
         let headers = create_headers("application/toml");
         let response = manifest(headers, Bytes::from(toml_content.as_bytes().to_vec())).await;
-        
+
         let (parts, _) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::NO_CONTENT);
     }
@@ -266,7 +266,7 @@ mod tests {
 
         let headers = create_headers("application/toml");
         let response = manifest(headers, Bytes::from(toml_content.as_bytes().to_vec())).await;
-        
+
         let (parts, _) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::NO_CONTENT);
     }
@@ -276,7 +276,7 @@ mod tests {
         let content = "Some content";
         let headers = create_headers("application/xml");
         let response = manifest(headers, Bytes::from(content.as_bytes().to_vec())).await;
-        
+
         let (parts, _) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
     }
@@ -286,7 +286,7 @@ mod tests {
         let invalid_content = "Invalid manifest content";
         let headers = create_headers("application/json");
         let response = manifest(headers, Bytes::from(invalid_content.as_bytes().to_vec())).await;
-        
+
         let (parts, _) = response.into_response().into_parts();
         assert_eq!(parts.status, StatusCode::BAD_REQUEST);
     }
