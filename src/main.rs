@@ -34,6 +34,7 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .with_state(rate_limiter_state)
         .route("/12/board", get(board))
         .route("/12/reset", post(reset_board))
+        .route("/12/place/:team/:column", post(place))
         .with_state(board_state);
 
     Ok(router.into())
