@@ -1,9 +1,16 @@
+use std::sync::Arc;
 use core::fmt;
 
-use axum::{http::StatusCode, response::IntoResponse};
+use axum::{extract::State, http::StatusCode, response::IntoResponse};
+use tokio::sync::Mutex;
+
+#[derive(Clone)]
+pub struct BoardState {
+    pub board: Arc<Mutex<Board>>,
+}
 
 #[derive(Debug)]
-struct Board {
+pub struct Board {
     tiles: Vec<Vec<Tile>>,
 }
 
@@ -62,15 +69,20 @@ impl fmt::Display for Board {
             .collect::<Vec<String>>()
             .join("\n");
 
-        writeln!(f, "{}", board)
+        writeln!(f, "{}", board.trim())
     }
 }
 
-pub async fn reset_board() -> impl IntoResponse {
-    (StatusCode::OK, Board::new().to_string())
+pub async fn reset_board(State(state): State<BoardState>) -> impl IntoResponse {
+    let mut board = state.board.lock().await;
+    *board = Board::new();
+    (StatusCode::OK, board.to_string())
 }
 
-pub async fn board() -> impl IntoResponse {
-    // TODO change me and wrap board in a Mutex - need AppState
-    (StatusCode::OK, Board::new().to_string())
+pub async fn board(State(state): State<BoardState>) -> impl IntoResponse {
+    (StatusCode::OK, state.board.lock().await.to_string())
+}
+
+pub fn board_state() -> Arc<Mutex<Board>> {
+    Arc::new(Mutex::new(Board::new()))
 }
