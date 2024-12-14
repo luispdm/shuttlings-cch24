@@ -29,7 +29,7 @@ pub struct Board {
     winner: Option<Winner>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum Tile {
     Empty,
@@ -43,7 +43,7 @@ enum Winner {
     Tie,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Team {
     Cookie,
@@ -67,7 +67,7 @@ impl fmt::Display for Tile {
 impl fmt::Display for Winner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            Winner::Team(t) => format!("{} wins!", Tile::Team(t.clone())),
+            Winner::Team(t) => format!("{} wins!", Tile::Team(*t)),
             Winner::Tie => "No winner.".to_string(),
         };
         write!(f, "{}", s)
@@ -131,7 +131,7 @@ impl Board {
     }
 
     fn place_team(&mut self, team: &Team, row: &usize, col: &usize) {
-        self.tiles[*row][*col] = team.clone().into();
+        self.tiles[*row][*col] = Tile::from(*team);
     }
 
     fn set_winner(&mut self) {
@@ -173,7 +173,7 @@ impl Board {
                 })
             })
             .and_then(|winning_row| match &winning_row[0] {
-                Tile::Team(team) => Some(Winner::Team(team.clone())),
+                Tile::Team(team) => Some(Winner::Team(*team)),
                 _ => None,
             })
     }
@@ -189,7 +189,7 @@ impl Board {
                     && column_tiles[0] != &Tile::Empty
             })
             .and_then(|winning_col| match &self.tiles[0][winning_col] {
-                Tile::Team(team) => Some(Winner::Team(team.clone())),
+                Tile::Team(team) => Some(Winner::Team(*team)),
                 _ => None,
             })
     }
@@ -202,7 +202,7 @@ impl Board {
         if first_diagonal.iter().all(|&tile| tile == first_diagonal[0])
             && *first_diagonal[0] != Tile::Empty
         {
-            return Some(first_diagonal[0].clone().into());
+            return Some(Winner::from(*first_diagonal[0]));
         }
 
         let last_diagonal: Vec<&Tile> = Board::playable_rows()
@@ -212,7 +212,7 @@ impl Board {
         if last_diagonal.iter().all(|&tile| tile == last_diagonal[0])
             && *last_diagonal[0] != Tile::Empty
         {
-            return Some(last_diagonal[0].clone().into());
+            return Some(Winner::from(*last_diagonal[0]));
         }
 
         None
