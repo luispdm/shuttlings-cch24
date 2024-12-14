@@ -2,6 +2,10 @@ use core::{
     clone::Clone,
     convert::{From, Into},
     fmt,
+    iter::Iterator,
+    ops::RangeInclusive,
+    option::Option,
+    unreachable, writeln,
 };
 use std::sync::Arc;
 
@@ -22,6 +26,7 @@ pub struct BoardState {
 #[derive(Debug)]
 pub struct Board {
     tiles: Vec<Vec<Tile>>,
+    winner: Option<Winner>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -30,6 +35,12 @@ enum Tile {
     Empty,
     Team(Team),
     Wall,
+}
+
+#[derive(Debug)]
+enum Winner {
+    Team(Team),
+    Tie,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -53,11 +64,31 @@ impl fmt::Display for Tile {
     }
 }
 
+impl fmt::Display for Winner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Winner::Team(t) => format!("{} wins!", Tile::Team(t.clone())),
+            Winner::Tie => "No winner.".to_string(),
+        };
+        write!(f, "{}", s)
+    }
+}
+
 impl From<Team> for Tile {
     fn from(value: Team) -> Self {
         match value {
-            Team::Cookie => Tile::Team(Team::Cookie),
-            Team::Milk => Tile::Team(Team::Milk),
+            Team::Cookie => Self::Team(Team::Cookie),
+            Team::Milk => Self::Team(Team::Milk),
+        }
+    }
+}
+
+impl From<Tile> for Winner {
+    fn from(value: Tile) -> Self {
+        match value {
+            Tile::Team(t) => Self::Team(t),
+            // winner should be printed only if it's cookie or milk
+            _ => unreachable!(),
         }
     }
 }
@@ -65,12 +96,13 @@ impl From<Team> for Tile {
 impl Board {
     fn new() -> Self {
         let mut b = Board {
-            tiles: vec![vec![Tile::Wall; 6]; 5],
+            tiles: vec![vec![Tile::Wall; Board::columns()]; Board::rows()],
+            winner: None,
         };
 
-        b.tiles = (0..5)
+        b.tiles = (0..Board::rows())
             .map(|i| {
-                (0..6)
+                (0..Board::columns())
                     .map(|j| match (i, j) {
                         (0..=3, 0 | 5) => Tile::Wall,
                         (4, _) => Tile::Wall,
@@ -82,7 +114,7 @@ impl Board {
         b
     }
 
-    fn game_over(&self) -> bool {
+    fn board_full(&self) -> bool {
         !self
             .tiles
             .iter()
@@ -93,19 +125,114 @@ impl Board {
         self.tiles
             .iter()
             .enumerate()
-            .filter(|(_, r)| r[*col] == Tile::Empty)
+            .rev()
+            .find(|(_, r)| r[*col] == Tile::Empty)
             .map(|(i, _)| i)
-            .collect::<Vec<usize>>()
-            .iter()
-            .max()
-            .copied()
     }
 
     fn place_team(&mut self, team: &Team, row: &usize, col: &usize) {
         self.tiles[*row][*col] = team.clone().into();
     }
 
-    // TODO need to handle winning team!
+    fn set_winner(&mut self) {
+        // check if there are 4 equal elements on any row
+        self.winner = self.winner_on_row();
+        if self.winner.is_some() {
+            return;
+        }
+
+        // check if there are 4 equal elements on any column
+        self.winner = self.winner_on_column();
+        if self.winner.is_some() {
+            return;
+        }
+
+        // check if there are 4 equal elements on the first diagonal
+        self.winner = self.winner_on_diagonal();
+        if self.winner.is_some() {
+            return;
+        }
+
+        // no winner - if the board is full, it's a tie
+        if self.board_full() {
+            self.winner = Some(Winner::Tie);
+        }
+    }
+
+    fn winner_on_row(&self) -> Option<Winner> {
+        let playable_tiles = Board::playable_rows()
+            .map(|row| &self.tiles[row][Board::playable_columns()])
+            .collect::<Vec<_>>();
+
+        playable_tiles
+            .iter()
+            .find(|row| {
+                row.iter().all(|tile| match tile {
+                    Tile::Team(_) => row.iter().all(|t| t == tile),
+                    _ => false,
+                })
+            })
+            .and_then(|winning_row| match &winning_row[0] {
+                Tile::Team(team) => Some(Winner::Team(team.clone())),
+                _ => None,
+            })
+    }
+
+    fn winner_on_column(&self) -> Option<Winner> {
+        Board::playable_columns()
+            .find(|col| {
+                let column_tiles: Vec<&Tile> = Board::playable_rows()
+                    .map(|row| &self.tiles[row][*col])
+                    .collect();
+
+                column_tiles.iter().all(|&tile| tile == column_tiles[0])
+                    && column_tiles[0] != &Tile::Empty
+            })
+            .and_then(|winning_col| match &self.tiles[0][winning_col] {
+                Tile::Team(team) => Some(Winner::Team(team.clone())),
+                _ => None,
+            })
+    }
+
+    fn winner_on_diagonal(&self) -> Option<Winner> {
+        let first_diagonal: Vec<&Tile> = Board::playable_rows()
+            .zip(Board::playable_columns())
+            .map(|(row, col)| &self.tiles[row][col])
+            .collect();
+        if first_diagonal.iter().all(|&tile| tile == first_diagonal[0])
+            && *first_diagonal[0] != Tile::Empty
+        {
+            return Some(first_diagonal[0].clone().into());
+        }
+
+        let last_diagonal: Vec<&Tile> = Board::playable_rows()
+            .zip(Board::playable_columns().rev())
+            .map(|(row, col)| &self.tiles[row][col])
+            .collect();
+        if last_diagonal.iter().all(|&tile| tile == last_diagonal[0])
+            && *last_diagonal[0] != Tile::Empty
+        {
+            return Some(last_diagonal[0].clone().into());
+        }
+
+        None
+    }
+
+    fn rows() -> usize {
+        5
+    }
+
+    fn columns() -> usize {
+        6
+    }
+
+    fn playable_rows() -> RangeInclusive<usize> {
+        RangeInclusive::new(0, 3)
+    }
+
+    fn playable_columns() -> RangeInclusive<usize> {
+        RangeInclusive::new(1, 4)
+    }
 }
 
 impl fmt::Display for Board {
@@ -122,7 +249,10 @@ impl fmt::Display for Board {
             .collect::<Vec<String>>()
             .join("\n");
 
-        writeln!(f, "{}", board.trim())
+        match &self.winner {
+            Some(w) => writeln!(f, "{}\n{}", board.trim(), w),
+            _ => writeln!(f, "{}", board.trim()),
+        }
     }
 }
 
@@ -146,14 +276,14 @@ pub async fn place(
     }
 
     // return if column is out of range
-    if !(1..5).contains(&column) {
+    if !Board::playable_columns().contains(&column) {
         return (StatusCode::BAD_REQUEST, "".to_string());
     }
 
     let mut board = state.board.lock().await;
 
     // return if game is over
-    if board.game_over() {
+    if board.winner.is_some() {
         return (StatusCode::SERVICE_UNAVAILABLE, board.to_string());
     }
 
@@ -161,9 +291,11 @@ pub async fn place(
     match board.deepest_row(&column) {
         Some(row) => {
             board.place_team(&team, &row, &column);
+            board.set_winner();
             (StatusCode::OK, board.to_string())
         }
-        _ => (StatusCode::SERVICE_UNAVAILABLE, board.to_string()), // column unavailable
+        // column unavailable
+        _ => (StatusCode::SERVICE_UNAVAILABLE, board.to_string()),
     }
 }
 
