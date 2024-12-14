@@ -160,19 +160,16 @@ impl Board {
     }
 
     fn winner_on_row(&self) -> Option<Winner> {
-        let playable_tiles = Board::playable_rows()
-            .map(|row| &self.tiles[row][Board::playable_columns()])
-            .collect::<Vec<_>>();
-
-        playable_tiles
-            .iter()
+        Board::playable_rows()
             .find(|row| {
-                row.iter().all(|tile| match tile {
-                    Tile::Team(_) => row.iter().all(|t| t == tile),
-                    _ => false,
-                })
+                let row_tiles: Vec<&Tile> = Board::playable_columns()
+                    .map(|col| &self.tiles[*row][col])
+                    .collect();
+    
+                row_tiles.iter().all(|&tile| tile == row_tiles[0])
+                    && row_tiles[0] != &Tile::Empty
             })
-            .and_then(|winning_row| match &winning_row[0] {
+            .and_then(|winning_row| match &self.tiles[winning_row][1] {
                 Tile::Team(team) => Some(Winner::Team(*team)),
                 _ => None,
             })
