@@ -17,3 +17,6 @@ target/
 #.idea//target
 .shuttle*
 Secrets*.toml
+
+# test http requests with rest client VSCode extension
+requests.http

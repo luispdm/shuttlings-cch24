@@ -16,7 +16,7 @@ const REFILL_INTERVAL: u64 = 1;
 const REFILL_AMOUNT: usize = 1;
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct RateLimiterState {
     pub limiter: Arc<Mutex<RateLimiter>>,
 }
 
@@ -41,7 +41,7 @@ impl Milk {
 }
 
 pub async fn milk(
-    State(state): State<AppState>,
+    State(state): State<RateLimiterState>,
     headers: HeaderMap,
     body: Bytes,
 ) -> impl IntoResponse {
@@ -73,7 +73,7 @@ pub async fn milk(
     }
 }
 
-pub async fn refill(State(state): State<AppState>) -> StatusCode {
+pub async fn refill(State(state): State<RateLimiterState>) -> StatusCode {
     let mut limiter = state.limiter.lock().await;
     *limiter = rate_limiter();
     StatusCode::OK

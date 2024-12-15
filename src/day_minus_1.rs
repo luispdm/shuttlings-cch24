@@ -3,7 +3,7 @@ use axum::{
     response::IntoResponse,
 };
 
-pub async fn hello_world() -> &'static str {
+pub async fn hello_bird() -> &'static str {
     "Hello, bird!"
 }
 
@@ -24,7 +24,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_hello_world() {
-        let response = hello_world().await;
+        let response = hello_bird().await;
         assert_eq!(response, "Hello, bird!");
     }
 

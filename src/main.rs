@@ -1,3 +1,4 @@
+mod day_12;
 mod day_2;
 mod day_5;
 mod day_9;
@@ -8,16 +9,21 @@ use axum::{
     Router,
 };
 
-use crate::{day_2::*, day_5::*, day_9::*, day_minus_1::*};
+use crate::{day_12::*, day_2::*, day_5::*, day_9::*, day_minus_1::*};
 
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
-    let state = AppState {
+    let rate_limiter_state = RateLimiterState {
         limiter: state_rate_limiter(),
     };
 
+    let board_state = BoardState {
+        board: arc_board(),
+        random_board: arc_random_board(),
+    };
+
     let router = Router::new()
-        .route("/", get(hello_world))
+        .route("/", get(hello_bird))
         .route("/-1/seek", get(seek))
         .route("/2/dest", get(dest_v4))
         .route("/2/key", get(key_v4))
@@ -26,7 +32,12 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/5/manifest", post(manifest))
         .route("/9/milk", post(milk))
         .route("/9/refill", post(refill))
-        .with_state(state);
+        .with_state(rate_limiter_state)
+        .route("/12/board", get(board))
+        .route("/12/random-board", get(random))
+        .route("/12/reset", post(reset))
+        .route("/12/place/:team/:column", post(place))
+        .with_state(board_state);
 
     Ok(router.into())
 }
