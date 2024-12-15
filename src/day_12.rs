@@ -1,10 +1,5 @@
 use core::{
-    clone::Clone,
-    convert::{From, Into},
-    fmt,
-    iter::Iterator,
-    ops::RangeInclusive,
-    option::Option,
+    clone::Clone, convert::From, fmt, iter::Iterator, ops::RangeInclusive, option::Option,
     unreachable, writeln,
 };
 use std::sync::Arc;
@@ -121,7 +116,8 @@ impl Board {
             .any(|r| r.iter().any(|c| c == &Tile::Empty))
     }
 
-    fn deepest_row(&self, col: &usize) -> Option<usize> {
+    /// Given the column index, returns the lowest empty tile in the board
+    fn free_spot(&self, col: &usize) -> Option<usize> {
         self.tiles
             .iter()
             .enumerate()
@@ -165,9 +161,8 @@ impl Board {
                 let row_tiles: Vec<&Tile> = Board::playable_columns()
                     .map(|col| &self.tiles[*row][col])
                     .collect();
-    
-                row_tiles.iter().all(|&tile| tile == row_tiles[0])
-                    && row_tiles[0] != &Tile::Empty
+
+                row_tiles.iter().all(|&tile| tile == row_tiles[0]) && row_tiles[0] != &Tile::Empty
             })
             .and_then(|winning_row| match &self.tiles[winning_row][1] {
                 Tile::Team(team) => Some(Winner::Team(*team)),
@@ -285,7 +280,7 @@ pub async fn place(
     }
 
     // try to place the item
-    match board.deepest_row(&column) {
+    match board.free_spot(&column) {
         Some(row) => {
             board.place_team(&team, &row, &column);
             board.set_winner();
