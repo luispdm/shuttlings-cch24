@@ -7,6 +7,7 @@ edition = "2021"
 axum = { version = "0.7.4", features = ["macros"] }
 cargo-manifest = "0.17.0"
 leaky-bucket = "1.1.2"
+rand = "0.8.5"
 serde = "1.0.215"
 serde_json = "1.0.133"
 serde_with = "3.11.0"

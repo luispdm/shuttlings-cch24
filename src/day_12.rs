@@ -1,9 +1,10 @@
 use core::{
     clone::Clone, convert::From, fmt, iter::Iterator, ops::RangeInclusive, option::Option,
-    unreachable, writeln,
+    unreachable, write, writeln,
 };
 use std::sync::Arc;
 
+use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 
 use axum::{
@@ -16,12 +17,18 @@ use tokio::sync::Mutex;
 #[derive(Clone)]
 pub struct BoardState {
     pub board: Arc<Mutex<Board>>,
+    pub random_board: Arc<Mutex<RandomBoard>>,
 }
 
 #[derive(Debug)]
 pub struct Board {
     tiles: Vec<Vec<Tile>>,
     winner: Option<Winner>,
+}
+
+pub struct RandomBoard {
+    board: Board,
+    seed: rand::rngs::StdRng,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -85,6 +92,32 @@ impl From<Tile> for Winner {
             // winner should be printed only if it's cookie or milk
             _ => unreachable!(),
         }
+    }
+}
+
+impl RandomBoard {
+    fn new() -> Self {
+        RandomBoard {
+            board: Board::new(),
+            seed: rand::rngs::StdRng::seed_from_u64(2024),
+        }
+    }
+
+    fn randomize_board(&mut self) {
+        self.board.tiles = (0..Board::rows())
+            .map(|i| {
+                (0..Board::columns())
+                    .map(|j| match (i, j) {
+                        (0..=3, 0 | 5) => Tile::Wall,
+                        (4, _) => Tile::Wall,
+                        _ => match self.seed.gen::<bool>() {
+                            true => Tile::Team(Team::Cookie),
+                            false => Tile::Team(Team::Milk),
+                        },
+                    })
+                    .collect()
+            })
+            .collect();
     }
 }
 
@@ -248,14 +281,27 @@ impl fmt::Display for Board {
     }
 }
 
-pub async fn reset_board(State(state): State<BoardState>) -> impl IntoResponse {
+pub async fn reset(State(state): State<BoardState>) -> impl IntoResponse {
     let mut board = state.board.lock().await;
     *board = Board::new();
+
+    let mut random_board = state.random_board.lock().await;
+    *random_board = RandomBoard::new();
+
     (StatusCode::OK, board.to_string())
 }
 
-pub async fn board(State(state): State<BoardState>) -> impl IntoResponse {
-    (StatusCode::OK, state.board.lock().await.to_string())
+pub async fn board(State(BoardState { board, .. }): State<BoardState>) -> impl IntoResponse {
+    (StatusCode::OK, board.lock().await.to_string())
+}
+
+pub async fn random(
+    State(BoardState { random_board, .. }): State<BoardState>,
+) -> impl IntoResponse {
+    let mut random_board = random_board.lock().await;
+    random_board.randomize_board();
+
+    (StatusCode::OK, random_board.board.to_string())
 }
 
 pub async fn place(
@@ -291,6 +337,10 @@ pub async fn place(
     }
 }
 
-pub fn board_state() -> Arc<Mutex<Board>> {
+pub fn arc_board() -> Arc<Mutex<Board>> {
     Arc::new(Mutex::new(Board::new()))
+}
+
+pub fn arc_random_board() -> Arc<Mutex<RandomBoard>> {
+    Arc::new(Mutex::new(RandomBoard::new()))
 }

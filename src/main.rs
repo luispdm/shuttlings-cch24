@@ -18,7 +18,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
     };
 
     let board_state = BoardState {
-        board: board_state(),
+        board: arc_board(),
+        random_board: arc_random_board(),
     };
 
     let router = Router::new()
@@ -33,7 +34,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/9/refill", post(refill))
         .with_state(rate_limiter_state)
         .route("/12/board", get(board))
-        .route("/12/reset", post(reset_board))
+        .route("/12/random-board", get(random))
+        .route("/12/reset", post(reset))
         .route("/12/place/:team/:column", post(place))
         .with_state(board_state);
 
