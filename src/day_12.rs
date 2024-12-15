@@ -30,6 +30,7 @@ pub struct RandomBoard {
     board: Board,
     seed: rand::rngs::StdRng,
 }
+struct BoardConfig {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -95,6 +96,19 @@ impl From<Tile> for Winner {
     }
 }
 
+impl BoardConfig {
+    pub const ROWS: usize = 5;
+    pub const COLUMNS: usize = 6;
+    
+    fn playable_rows() -> RangeInclusive<usize> {
+        RangeInclusive::new(0, 3)
+    }
+
+    fn playable_columns() -> RangeInclusive<usize> {
+        RangeInclusive::new(1, 4)
+    }
+}
+
 impl RandomBoard {
     fn new() -> Self {
         RandomBoard {
@@ -103,10 +117,11 @@ impl RandomBoard {
         }
     }
 
+    // TODO find a way to unify this and Board::new()
     fn randomize_board(&mut self) {
-        self.board.tiles = (0..Board::rows())
+        self.board.tiles = (0..BoardConfig::ROWS)
             .map(|i| {
-                (0..Board::columns())
+                (0..BoardConfig::COLUMNS)
                     .map(|j| match (i, j) {
                         (0..=3, 0 | 5) => Tile::Wall,
                         (4, _) => Tile::Wall,
@@ -121,16 +136,37 @@ impl RandomBoard {
     }
 }
 
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let board = &self
+            .tiles
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .map(|tile| tile.to_string())
+                    .collect::<Vec<String>>()
+                    .join("")
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        match &self.winner {
+            Some(w) => writeln!(f, "{}\n{}", board.trim(), w),
+            _ => writeln!(f, "{}", board.trim()),
+        }
+    }
+}
+
 impl Board {
     fn new() -> Self {
         let mut b = Board {
-            tiles: vec![vec![Tile::Wall; Board::columns()]; Board::rows()],
+            tiles: vec![vec![Tile::Wall; BoardConfig::COLUMNS]; BoardConfig::ROWS],
             winner: None,
         };
 
-        b.tiles = (0..Board::rows())
+        b.tiles = (0..BoardConfig::ROWS)
             .map(|i| {
-                (0..Board::columns())
+                (0..BoardConfig::COLUMNS)
                     .map(|j| match (i, j) {
                         (0..=3, 0 | 5) => Tile::Wall,
                         (4, _) => Tile::Wall,
@@ -189,9 +225,9 @@ impl Board {
     }
 
     fn winner_on_row(&self) -> Option<Winner> {
-        Board::playable_rows()
+        BoardConfig::playable_rows()
             .find(|row| {
-                let row_tiles: Vec<&Tile> = Board::playable_columns()
+                let row_tiles: Vec<&Tile> = BoardConfig::playable_columns()
                     .map(|col| &self.tiles[*row][col])
                     .collect();
 
@@ -204,9 +240,9 @@ impl Board {
     }
 
     fn winner_on_column(&self) -> Option<Winner> {
-        Board::playable_columns()
+        BoardConfig::playable_columns()
             .find(|col| {
-                let column_tiles: Vec<&Tile> = Board::playable_rows()
+                let column_tiles: Vec<&Tile> = BoardConfig::playable_rows()
                     .map(|row| &self.tiles[row][*col])
                     .collect();
 
@@ -220,8 +256,8 @@ impl Board {
     }
 
     fn winner_on_diagonal(&self) -> Option<Winner> {
-        let first_diagonal: Vec<&Tile> = Board::playable_rows()
-            .zip(Board::playable_columns())
+        let first_diagonal: Vec<&Tile> = BoardConfig::playable_rows()
+            .zip(BoardConfig::playable_columns())
             .map(|(row, col)| &self.tiles[row][col])
             .collect();
         if first_diagonal.iter().all(|&tile| tile == first_diagonal[0])
@@ -230,8 +266,8 @@ impl Board {
             return Some(Winner::from(*first_diagonal[0]));
         }
 
-        let last_diagonal: Vec<&Tile> = Board::playable_rows()
-            .zip(Board::playable_columns().rev())
+        let last_diagonal: Vec<&Tile> = BoardConfig::playable_rows()
+            .zip(BoardConfig::playable_columns().rev())
             .map(|(row, col)| &self.tiles[row][col])
             .collect();
         if last_diagonal.iter().all(|&tile| tile == last_diagonal[0])
@@ -241,43 +277,6 @@ impl Board {
         }
 
         None
-    }
-
-    fn rows() -> usize {
-        5
-    }
-
-    fn columns() -> usize {
-        6
-    }
-
-    fn playable_rows() -> RangeInclusive<usize> {
-        RangeInclusive::new(0, 3)
-    }
-
-    fn playable_columns() -> RangeInclusive<usize> {
-        RangeInclusive::new(1, 4)
-    }
-}
-
-impl fmt::Display for Board {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let board = &self
-            .tiles
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .map(|tile| tile.to_string())
-                    .collect::<Vec<String>>()
-                    .join("")
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        match &self.winner {
-            Some(w) => writeln!(f, "{}\n{}", board.trim(), w),
-            _ => writeln!(f, "{}", board.trim()),
-        }
     }
 }
 
@@ -314,7 +313,7 @@ pub async fn place(
     }
 
     // return if column is out of range
-    if !Board::playable_columns().contains(&column) {
+    if !BoardConfig::playable_columns().contains(&column) {
         return (StatusCode::BAD_REQUEST, "".to_string());
     }
 
