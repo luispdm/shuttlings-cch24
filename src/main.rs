@@ -1,4 +1,5 @@
 mod day_12;
+mod day_16;
 mod day_2;
 mod day_5;
 mod day_9;
@@ -9,7 +10,7 @@ use axum::{
     Router,
 };
 
-use crate::{day_12::*, day_2::*, day_5::*, day_9::*, day_minus_1::*};
+use crate::{day_12::*, day_16::*, day_2::*, day_5::*, day_9::*, day_minus_1::*};
 
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
@@ -37,7 +38,10 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/12/random-board", get(random))
         .route("/12/reset", post(reset))
         .route("/12/place/:team/:column", post(place))
-        .with_state(board_state);
+        .with_state(board_state)
+        .route("/16/wrap", post(wrap))
+        .route("/16/unwrap", get(unwrap))
+        .route("/16/decode", post(decode));
 
     Ok(router.into())
 }
