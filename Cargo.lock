@@ -1827,7 +1827,6 @@ dependencies = [
  "shuttle-axum",
  "shuttle-runtime",
  "tokio",
- "toml",
 ]
 
 [[package]]

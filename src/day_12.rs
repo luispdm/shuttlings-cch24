@@ -99,7 +99,7 @@ impl From<Tile> for Winner {
 impl BoardConfig {
     pub const ROWS: usize = 5;
     pub const COLUMNS: usize = 6;
-    
+
     fn playable_rows() -> RangeInclusive<usize> {
         RangeInclusive::new(0, 3)
     }
