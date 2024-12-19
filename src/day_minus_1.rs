@@ -23,7 +23,7 @@ mod tests {
     use axum::response::Response;
 
     #[tokio::test]
-    async fn test_hello_world() {
+    async fn test_hello_bird() {
         let response = hello_bird().await;
         assert_eq!(response, "Hello, bird!");
     }
