@@ -1,5 +1,6 @@
 mod day_12;
 mod day_16;
+mod day_19;
 mod day_2;
 mod day_5;
 mod day_9;
@@ -9,11 +10,19 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use sqlx::PgPool;
 
-use crate::{day_12::*, day_16::*, day_2::*, day_5::*, day_9::*, day_minus_1::*};
+use crate::{day_12::*, day_16::*, day_19::*, day_2::*, day_5::*, day_9::*, day_minus_1::*};
 
 #[shuttle_runtime::main]
-async fn main() -> shuttle_axum::ShuttleAxum {
+async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::ShuttleAxum {
+    sqlx::migrate!("src/day_19")
+        .run(&pool)
+        .await
+        .expect("Failed to run day 19 migrations");
+
+    let db_state = DbState { pool };
+
     let rate_limiter_state = RateLimiterState {
         limiter: state_rate_limiter(),
     };
@@ -41,7 +50,10 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .with_state(board_state)
         .route("/16/wrap", post(wrap))
         .route("/16/unwrap", get(unwrap))
-        .route("/16/decode", post(decode));
+        .route("/16/decode", post(decode))
+        .route("/19/reset", post(reset_quotes))
+        .route("/19/cite/:id", get(cite))
+        .with_state(db_state);
 
     Ok(router.into())
 }
