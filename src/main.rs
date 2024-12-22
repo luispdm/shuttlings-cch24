@@ -21,7 +21,10 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .await
         .expect("Failed to run day 19 migrations");
 
-    let db_state = DbState { pool };
+    let db_state = DbState {
+        pool,
+        tokens: state_tokens(),
+    };
 
     let rate_limiter_state = RateLimiterState {
         limiter: state_rate_limiter(),
@@ -56,6 +59,7 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .route("/19/draft", post(draft))
         .route("/19/remove/:id", delete(remove))
         .route("/19/undo/:id", put(undo))
+        .route("/19/list", get(list))
         .with_state(db_state);
 
     Ok(router.into())

@@ -88,7 +88,7 @@ pub async fn manifest(headers: HeaderMap, body: Bytes) -> impl IntoResponse {
             .status(StatusCode::OK)
             .body(r.trim().to_string())
             .unwrap(),
-        None => Response::builder()
+        _ => Response::builder()
             .status(StatusCode::NO_CONTENT)
             .body("".to_string())
             .unwrap(),
