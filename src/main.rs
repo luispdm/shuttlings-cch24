@@ -7,7 +7,7 @@ mod day_9;
 mod day_minus_1;
 
 use axum::{
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use sqlx::PgPool;
@@ -55,6 +55,7 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .route("/19/cite/:id", get(cite))
         .route("/19/draft", post(draft))
         .route("/19/remove/:id", delete(remove))
+        .route("/19/undo/:id", put(undo))
         .with_state(db_state);
 
     Ok(router.into())

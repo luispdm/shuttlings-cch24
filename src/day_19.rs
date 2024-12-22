@@ -35,7 +35,7 @@ pub async fn cite(Path(id): Path<Uuid>, State(state): State<DbState>) -> impl In
         .fetch_one(&state.pool)
         .await
     {
-        Ok(q) => Ok((StatusCode::OK, q.quote)),
+        Ok(q) => Ok((StatusCode::OK, Json(q))),
         _ => Err((StatusCode::NOT_FOUND, "".to_string())),
     }
 }
@@ -64,11 +64,30 @@ pub async fn remove(Path(id): Path<Uuid>, State(state): State<DbState>) -> impl 
         .fetch_one(&state.pool)
         .await
     {
-        Ok(q) => Ok((StatusCode::OK, q.quote)),
+        Ok(q) => Ok((StatusCode::OK, Json(q))),
         Err(e) => {
             println!("{}", e);
             Err((StatusCode::NOT_FOUND, "".to_string()))
         }
+    }
+}
+
+pub async fn undo(
+    Path(id): Path<Uuid>,
+    State(state): State<DbState>,
+    Json(new_quote): Json<NewQuote>,
+) -> impl IntoResponse {
+    match query_as::<_, Quote>(
+        "UPDATE quotes SET author = $2, quote = $3, version = version + 1 WHERE id = $1 RETURNING *",
+    )
+    .bind(id)
+    .bind(&new_quote.author)
+    .bind(&new_quote.quote)
+    .fetch_one(&state.pool)
+    .await
+    {
+        Ok(q) => Ok((StatusCode::OK, Json(q))),
+        _ => Err((StatusCode::NOT_FOUND, "".to_string())),
     }
 }
 
