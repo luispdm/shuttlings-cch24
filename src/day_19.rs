@@ -58,6 +58,20 @@ pub async fn draft(
     }
 }
 
+pub async fn remove(Path(id): Path<Uuid>, State(state): State<DbState>) -> impl IntoResponse {
+    match query_as::<_, Quote>("DELETE FROM quotes WHERE id = $1 RETURNING *")
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await
+    {
+        Ok(q) => Ok((StatusCode::OK, q.quote)),
+        Err(e) => {
+            println!("{}", e);
+            Err((StatusCode::NOT_FOUND, "".to_string()))
+        }
+    }
+}
+
 pub async fn reset_quotes(State(state): State<DbState>) -> impl IntoResponse {
     match query("TRUNCATE TABLE quotes").execute(&state.pool).await {
         Ok(_) => Ok(StatusCode::OK),
