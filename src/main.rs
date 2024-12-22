@@ -53,6 +53,7 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .route("/16/decode", post(decode))
         .route("/19/reset", post(reset_quotes))
         .route("/19/cite/:id", get(cite))
+        .route("/19/draft", post(draft))
         .with_state(db_state);
 
     Ok(router.into())

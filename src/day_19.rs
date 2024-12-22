@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{query_as, FromRow, PgPool};
 use uuid::Uuid;
 
@@ -16,11 +16,17 @@ pub struct DbState {
 
 #[derive(Serialize, FromRow)]
 struct Quote {
-    pub id: Uuid,
-    pub author: String,
-    pub quote: String,
-    pub created_at: DateTime<Utc>,
-    pub version: i32,
+    id: Uuid,
+    author: String,
+    quote: String,
+    created_at: DateTime<Utc>,
+    version: i32,
+}
+
+#[derive(Deserialize)]
+pub struct NewQuote {
+    author: String,
+    quote: String,
 }
 
 pub async fn cite(Path(id): Path<Uuid>, State(state): State<DbState>) -> impl IntoResponse {
@@ -29,12 +35,30 @@ pub async fn cite(Path(id): Path<Uuid>, State(state): State<DbState>) -> impl In
         .fetch_one(&state.pool)
         .await
     {
-        Ok(quote) => Ok((StatusCode::OK, Json(quote))), // TODO probably need to return only `quote`
+        Ok(q) => Ok((StatusCode::OK, q.quote)),
+        _ => Err((StatusCode::NOT_FOUND, "".to_string())),
+    }
+}
+
+pub async fn draft(
+    State(state): State<DbState>,
+    Json(new_quote): Json<NewQuote>,
+) -> impl IntoResponse {
+    match query_as::<_, Quote>(
+        "INSERT INTO quotes (id, author, quote) VALUES ($1, $2, $3) RETURNING *",
+    )
+    .bind(Uuid::new_v4())
+    .bind(&new_quote.author)
+    .bind(&new_quote.quote)
+    .fetch_one(&state.pool)
+    .await
+    {
+        Ok(q) => Ok((StatusCode::CREATED, Json(q))),
         _ => Err((StatusCode::NOT_FOUND, "".to_string())),
     }
 }
 
 pub async fn reset_quotes() -> impl IntoResponse {
-    // TODO to implement
+    // TODO implement
     StatusCode::OK
 }
