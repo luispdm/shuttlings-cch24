@@ -6,7 +6,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{query_as, FromRow, PgPool};
+use sqlx::{query, query_as, FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -58,7 +58,9 @@ pub async fn draft(
     }
 }
 
-pub async fn reset_quotes() -> impl IntoResponse {
-    // TODO implement
-    StatusCode::OK
+pub async fn reset_quotes(State(state): State<DbState>) -> impl IntoResponse {
+    match query("TRUNCATE TABLE quotes").execute(&state.pool).await {
+        Ok(_) => Ok(StatusCode::OK),
+        _ => Err((StatusCode::INTERNAL_SERVER_ERROR, "".to_string())),
+    }
 }
