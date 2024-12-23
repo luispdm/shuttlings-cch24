@@ -22,7 +22,7 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .expect("Failed to run day 19 migrations");
 
     let db_state = DbState {
-        pool,
+        repository: state_repository(pool),
         tokens: state_tokens(),
     };
 

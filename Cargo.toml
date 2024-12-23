@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+async-trait = "0.1.83"
 axum = { version = "0.7.4", features = ["macros"] }
 axum-extra = { version = "0.9.6", features = ["cookie", "query"] }
 cargo-manifest = "0.17.0"
@@ -25,3 +26,5 @@ uuid = { version = "1.11.0", features = ["v4"] }
 [dev-dependencies]
 http-body-util = "0.1"
 bytes = "1.5"
+mockall = "0.13.1"
+tower = { version = "0.5.2", features = ["util"] }
