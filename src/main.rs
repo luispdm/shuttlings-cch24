@@ -11,6 +11,7 @@ use axum::{
     Router,
 };
 use sqlx::PgPool;
+use tower_http::services::ServeDir;
 
 use crate::{day_12::*, day_16::*, day_19::*, day_2::*, day_5::*, day_9::*, day_minus_1::*};
 
@@ -60,7 +61,8 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .route("/19/remove/:id", delete(remove))
         .route("/19/undo/:id", put(undo))
         .route("/19/list", get(list))
-        .with_state(db_state);
+        .with_state(db_state)
+        .nest_service("/assets", ServeDir::new("src/day_23"));
 
     Ok(router.into())
 }
