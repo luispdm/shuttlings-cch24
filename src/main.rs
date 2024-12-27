@@ -68,7 +68,8 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .nest_service("/assets", ServeDir::new("src/day_23"))
         .route("/23/star", get(star))
         .route("/23/present/:color", get(present))
-        .route("/23/ornament/:state/:number", get(ornament));
+        .route("/23/ornament/:state/:number", get(ornament))
+        .route("/23/lockfile", post(lockfile));
 
     Ok(router.into())
 }
