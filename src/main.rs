@@ -2,6 +2,7 @@ mod day_12;
 mod day_16;
 mod day_19;
 mod day_2;
+mod day_23;
 mod day_5;
 mod day_9;
 mod day_minus_1;
@@ -11,8 +12,11 @@ use axum::{
     Router,
 };
 use sqlx::PgPool;
+use tower_http::services::ServeDir;
 
-use crate::{day_12::*, day_16::*, day_19::*, day_2::*, day_5::*, day_9::*, day_minus_1::*};
+use crate::{
+    day_12::*, day_16::*, day_19::*, day_2::*, day_23::*, day_5::*, day_9::*, day_minus_1::*,
+};
 
 #[shuttle_runtime::main]
 async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::ShuttleAxum {
@@ -60,7 +64,12 @@ async fn main(#[shuttle_shared_db::Postgres] pool: PgPool) -> shuttle_axum::Shut
         .route("/19/remove/:id", delete(remove))
         .route("/19/undo/:id", put(undo))
         .route("/19/list", get(list))
-        .with_state(db_state);
+        .with_state(db_state)
+        .nest_service("/assets", ServeDir::new("src/day_23"))
+        .route("/23/star", get(star))
+        .route("/23/present/:color", get(present))
+        .route("/23/ornament/:state/:number", get(ornament))
+        .route("/23/lockfile", post(lockfile));
 
     Ok(router.into())
 }
