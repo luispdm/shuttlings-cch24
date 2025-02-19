@@ -1,3 +1,5 @@
+# Shuttle Advent of Code 2024
+
 > what
 
 Shuttle's Christmas Code Hunt, (inspired by Advent of Code), invites you to solve challenges using Rust in a fun and relaxed environment. In each challenge, you'll implement HTTP endpoints that respond with the challenge's solution. It is a great way to get started with Rust and Shuttle!
